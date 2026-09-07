@@ -130,6 +130,14 @@ pub fn extract_office_emf_bytes(path: &Path) -> Option<Vec<u8>> {
     crate::thumbs::office::extract_emf_bytes(path)
 }
 
+/// 逐页提取 PDF 文本（语义搜索/内容索引用）：返回按页序的文本，无文本层页为空串。
+/// 内部复用与缩略图渲染同一把 pdfium 全局锁，宿主无需关心 FFI 线程安全；
+/// 绑定失败或文档损坏返回 None。
+#[cfg(feature = "pdf")]
+pub fn extract_pdf_pages_text(path: &Path, max_pages: usize) -> Option<Vec<String>> {
+    crate::thumbs::pdf::extract_pages_text(path, max_pages)
+}
+
 pub struct Thumbnailer {
     /// The maximum output width.
     pub width: u32,

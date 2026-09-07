@@ -94,3 +94,25 @@ fn render_first_page(
     let img = first_page.render_with_config(&render_config)?.as_image()?;
     Ok(img.thumbnail(width, height))
 }
+
+/// 逐页提取 PDF 文本（供宿主应用做文档 embedding / 内容 FTS）。
+/// 返回按页序排列的文本（无文本层的页为空串），便于调用方按页做"扫描件判定"
+/// （整本几乎无字符 → 无文本层）与按页分块。
+/// 与渲染共用同一把 pdfium 全局锁 + 单次绑定：pdfium FFI 非线程安全。
+pub(crate) fn extract_pages_text(path: &Path, max_pages: usize) -> Option<Vec<String>> {
+    with_pdfium(|pdfium| {
+        let document = pdfium.load_pdf_from_file(path, None)?;
+        let mut pages = Vec::new();
+        for page in document.pages().iter().take(max_pages) {
+            // 单页文本失败不终止整本：损坏页按无文本处理
+            // pdfium-render 0.9 的 text.all() 直接返回 String（空则空串），
+            // 页面损坏/无文本时按空页处理（扫描件判定的构成部分）
+            let text = match page.text() {
+                Ok(text) => text.all(),
+                Err(_) => String::new(),
+            };
+            pages.push(text);
+        }
+        Ok(pages)
+    })
+}
