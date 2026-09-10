@@ -5,6 +5,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::Path;
 use std::sync::Mutex;
 
+use image::GenericImageView;
 use image::DynamicImage;
 use pdfium_render::prelude::{PdfRenderConfig, Pdfium};
 
@@ -93,6 +94,58 @@ fn render_first_page(
     let first_page = document.pages().first()?;
     let img = first_page.render_with_config(&render_config)?.as_image()?;
     Ok(img.thumbnail(width, height))
+}
+
+/// 逐页渲染 PDF 为位图（供 OCR 评估/扫描件兜底）；与文本提取共用 pdfium 全局锁。
+pub fn render_pdf_pages(path: &Path, max_pages: usize) -> Option<Vec<DynamicImage>> {
+    render_pdf_pages_with_limit(path, max_pages, None)
+}
+
+/// OCR 专用逐页渲染：默认 72 DPI 位图再按 `scale` 放大（2.0 ≈ PyMuPDF Matrix(2,2)）。
+pub fn render_pdf_pages_for_ocr(
+    path: &Path,
+    max_pages: usize,
+    scale: f32,
+) -> Option<Vec<DynamicImage>> {
+    let scale = scale.max(1.0);
+    render_pdf_pages_with_limit(path, max_pages, None).map(|pages| {
+        pages
+            .into_iter()
+            .map(|img| {
+                let (w, h) = img.dimensions();
+                let nw = ((w as f32 * scale).round() as u32).max(1);
+                let nh = ((h as f32 * scale).round() as u32).max(1);
+                if nw == w && nh == h {
+                    return img;
+                }
+                image::imageops::resize(&img, nw, nh, image::imageops::FilterType::Triangle).into()
+            })
+            .collect()
+    })
+}
+
+/// 逐页渲染 PDF；`max_long_side` 为 Some 时将长边压至不超过该像素（OCR 评估常用 1680）。
+pub fn render_pdf_pages_with_limit(
+    path: &Path,
+    max_pages: usize,
+    max_long_side: Option<u32>,
+) -> Option<Vec<DynamicImage>> {
+    with_pdfium(|pdfium| {
+        let document = pdfium.load_pdf_from_file(path, None)?;
+        let render_config = PdfRenderConfig::new();
+        let mut pages = Vec::new();
+        for page in document.pages().iter().take(max_pages) {
+            let mut img = page.render_with_config(&render_config)?.as_image()?;
+            if let Some(limit) = max_long_side {
+                let (w, h) = img.dimensions();
+                if w.max(h) > limit {
+                    img = img.thumbnail(limit, limit);
+                }
+            }
+            pages.push(img);
+        }
+        Ok(pages)
+    })
 }
 
 /// 逐页提取 PDF 文本（供宿主应用做文档 embedding / 内容 FTS）。

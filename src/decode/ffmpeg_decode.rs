@@ -145,6 +145,35 @@ pub fn decode_swf_first_frame(path: &Path) -> Option<DynamicImage> {
     decode_video_first_frame(path, 0.0, HashMap::new()).ok()
 }
 
+/// 均匀抽取视频帧（视频语义索引）：在时长上均匀取最多 `max_frames` 个 seek 点解码。
+/// 解码失败的时间点跳过；全部失败时回退首帧。供 spike 与闲时 CLIP 流水线复用。
+#[cfg(feature = "video")]
+pub fn decode_video_sample_frames(path: &Path, max_frames: usize) -> Vec<DynamicImage> {
+    ffmpeg_log::init_ffmpeg_logging();
+    let probe = ffmpeg_probe::probe_options_for_path(path);
+    let duration = probe_duration_secs(path, probe.clone()).unwrap_or(0.0);
+    let count = max_frames.clamp(1, 5);
+    let seek_points: Vec<f64> = if duration <= 0.5 {
+        vec![0.0]
+    } else {
+        (0..count)
+            .map(|i| duration * i as f64 / count as f64)
+            .collect()
+    };
+    let mut frames = Vec::new();
+    for secs in seek_points {
+        if let Ok(frame) = decode_video_first_frame(path, secs, probe.clone()) {
+            frames.push(frame);
+        }
+    }
+    if frames.is_empty() {
+        if let Ok(frame) = decode_video_first_frame(path, 0.0, probe) {
+            frames.push(frame);
+        }
+    }
+    frames
+}
+
 #[cfg(feature = "video")]
 fn decode_video_first_frame_inner(
     path: &Path,
@@ -334,6 +363,11 @@ pub fn probe_duration_secs(_path: &Path, _probe: HashMap<String, String>) -> Opt
 #[cfg(not(feature = "video"))]
 pub fn decode_swf_first_frame(_path: &Path) -> Option<DynamicImage> {
     None
+}
+
+#[cfg(not(feature = "video"))]
+pub fn decode_video_sample_frames(_path: &Path, _max_frames: usize) -> Vec<DynamicImage> {
+    Vec::new()
 }
 
 #[cfg(not(feature = "video"))]

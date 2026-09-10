@@ -130,12 +130,44 @@ pub fn extract_office_emf_bytes(path: &Path) -> Option<Vec<u8>> {
     crate::thumbs::office::extract_emf_bytes(path)
 }
 
+/// 逐页渲染 PDF 位图（OCR / 扫描件评估用）；绑定失败或损坏返回 None。
+#[cfg(feature = "pdf")]
+pub fn render_pdf_pages(path: &Path, max_pages: usize) -> Option<Vec<DynamicImage>> {
+    crate::thumbs::pdf::render_pdf_pages(path, max_pages)
+}
+
+/// 逐页渲染 PDF，可选长边上限（像素）。
+#[cfg(feature = "pdf")]
+pub fn render_pdf_pages_with_limit(
+    path: &Path,
+    max_pages: usize,
+    max_long_side: Option<u32>,
+) -> Option<Vec<DynamicImage>> {
+    crate::thumbs::pdf::render_pdf_pages_with_limit(path, max_pages, max_long_side)
+}
+
+/// OCR 专用 PDF 渲染（默认 2× 缩放）。
+#[cfg(feature = "pdf")]
+pub fn render_pdf_pages_for_ocr(
+    path: &Path,
+    max_pages: usize,
+    scale: f32,
+) -> Option<Vec<DynamicImage>> {
+    crate::thumbs::pdf::render_pdf_pages_for_ocr(path, max_pages, scale)
+}
+
 /// 逐页提取 PDF 文本（语义搜索/内容索引用）：返回按页序的文本，无文本层页为空串。
 /// 内部复用与缩略图渲染同一把 pdfium 全局锁，宿主无需关心 FFI 线程安全；
 /// 绑定失败或文档损坏返回 None。
 #[cfg(feature = "pdf")]
 pub fn extract_pdf_pages_text(path: &Path, max_pages: usize) -> Option<Vec<String>> {
     crate::thumbs::pdf::extract_pages_text(path, max_pages)
+}
+
+/// 均匀抽取视频帧：需 `video` feature 与系统 FFmpeg。
+#[cfg(feature = "video")]
+pub fn decode_video_sample_frames(path: &Path, max_frames: usize) -> Vec<DynamicImage> {
+    crate::decode::ffmpeg_decode::decode_video_sample_frames(path, max_frames)
 }
 
 pub struct Thumbnailer {
