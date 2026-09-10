@@ -1,16 +1,21 @@
+[workspace]
+members = [".", "auto-thumbnail"]
+resolver = "2"
+
 [package]
-name = "auto-thumbnail"
-version = "0.2.0"
+name = "media-decode"
+version = "0.3.0"
 edition = "2024"
 license = "MIT"
-description = "Converts various file formats into thumbnail image."
+description = "Multi-format media decoding: thumbnails, metadata, PDF text/render, video frames."
 
-repository = "https://github.com/siminx/auto-thumbnail"
-homepage = "https://github.com/siminx/auto-thumbnail"
+repository = "https://github.com/siminx/media-decode"
+homepage = "https://github.com/siminx/media-decode"
 
 exclude = [
     "demo",
-    "*.dll"
+    "*.dll",
+    "auto-thumbnail",
 ]
 
 [dependencies]

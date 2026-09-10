@@ -1,0 +1,24 @@
+[package]
+name = "auto-thumbnail"
+version = "0.3.0"
+edition = "2024"
+license = "MIT"
+description = "Deprecated compatibility shim; use media-decode."
+readme = "README.md"
+repository = "https://github.com/siminx/media-decode"
+homepage = "https://github.com/siminx/media-decode"
+
+[dependencies]
+media-decode = { path = "..", version = "0.3", default-features = false }
+
+[features]
+default = ["full"]
+image = ["media-decode/image"]
+video = ["media-decode/video"]
+pdf = ["media-decode/pdf"]
+svg = ["media-decode/svg"]
+raw = ["media-decode/raw"]
+audio = ["media-decode/audio"]
+office = ["media-decode/office"]
+source = ["media-decode/source"]
+full = ["media-decode/full"]

@@ -59,7 +59,7 @@ mod tests {
     /// 若字体库未生效，文本区域为全透明，此测试即失败。
     #[test]
     fn text_with_sans_serif_renders() {
-        let path = std::env::temp_dir().join("auto_thumbnail_font_test.svg");
+        let path = std::env::temp_dir().join("media_decode_font_test.svg");
         std::fs::write(
             &path,
             r##"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40">

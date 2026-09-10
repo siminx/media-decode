@@ -150,7 +150,7 @@ mod tests {
         // 篡改 bfOffBits 为指向图像中部的垃圾值（模拟真实坏文件 3.bmp）
         data[10..14].copy_from_slice(&1024u32.to_le_bytes());
 
-        let dir = std::env::temp_dir().join("auto-thumbnail-bmp-repair-test");
+        let dir = std::env::temp_dir().join("media-decode-bmp-repair-test");
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("corrupted_offset.bmp");
         std::fs::write(&path, &data).unwrap();
