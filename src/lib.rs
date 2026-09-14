@@ -6,6 +6,7 @@ mod thumbs;
 pub mod types;
 
 pub use decode::{DecodeError, decode_and_thumbnail, decode_image};
+pub use decode::waveform::DEFAULT_WAVEFORM_BARS;
 pub use frame_valid::{is_effectively_blank, is_rgba_blank};
 pub use meta::{MediaMeta, probe_media_meta};
 
@@ -168,6 +169,72 @@ pub fn extract_pdf_pages_text(path: &Path, max_pages: usize) -> Option<Vec<Strin
 #[cfg(feature = "video")]
 pub fn decode_video_sample_frames(path: &Path, max_frames: usize) -> Vec<DynamicImage> {
     crate::decode::ffmpeg_decode::decode_video_sample_frames(path, max_frames)
+}
+
+/// Quick Look 时间轴：均匀 seek 抽帧并缩放到指定高度。
+#[cfg(feature = "video")]
+pub fn decode_video_timeline_frames(path: &Path, count: usize, thumb_h: u32) -> Vec<DynamicImage> {
+    crate::decode::timeline::decode_video_timeline_frames(path, count, thumb_h)
+}
+
+/// 将时间轴帧拼成 Artplayer sprite 网格图。
+#[cfg(feature = "video")]
+pub fn stitch_timeline_sprite(
+    frames: &[DynamicImage],
+    columns: u32,
+    thumb_w: u32,
+    thumb_h: u32,
+) -> Option<::image::RgbaImage> {
+    crate::decode::timeline::stitch_timeline_sprite(frames, columns, thumb_w, thumb_h)
+}
+
+pub use decode::subtitle::{SubtitleStreamInfo, extract_subtitle_to_vtt, list_subtitle_streams};
+
+/// 音频内嵌专辑封面（ID3/APIC 等）；无封面时 None，与波形缩略图无关。
+#[cfg(feature = "audio")]
+pub fn extract_audio_cover(path: &Path, max_dim: u32) -> Option<DynamicImage> {
+    crate::thumbs::audio::extract_cover(path, max_dim)
+}
+
+#[cfg(not(feature = "audio"))]
+pub fn extract_audio_cover(_path: &Path, _max_dim: u32) -> Option<DynamicImage> {
+    None
+}
+
+/// 音频波形缩略图：失败时返回 None，由上层回退专辑封面。
+#[cfg(feature = "video")]
+pub fn render_audio_waveform(
+    path: &Path,
+    width: u32,
+    height: u32,
+    bars: usize,
+) -> Option<::image::RgbaImage> {
+    crate::decode::waveform::render_audio_waveform(path, width, height, bars)
+}
+
+#[cfg(not(feature = "video"))]
+pub fn decode_video_timeline_frames(_path: &Path, _count: usize, _thumb_h: u32) -> Vec<DynamicImage> {
+    Vec::new()
+}
+
+#[cfg(not(feature = "video"))]
+pub fn stitch_timeline_sprite(
+    _frames: &[DynamicImage],
+    _columns: u32,
+    _thumb_w: u32,
+    _thumb_h: u32,
+) -> Option<::image::RgbaImage> {
+    None
+}
+
+#[cfg(not(feature = "video"))]
+pub fn render_audio_waveform(
+    _path: &Path,
+    _width: u32,
+    _height: u32,
+    _bars: usize,
+) -> Option<::image::RgbaImage> {
+    None
 }
 
 pub struct Thumbnailer {
