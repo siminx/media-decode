@@ -6,15 +6,15 @@ use image::{Rgba, RgbaImage};
 
 use super::ffmpeg_log;
 
-/// 默认波形条数量（Icon 档 512px：256 条 × 2px 步进 ≈ 1px 柱 + 1px 间距）
+/// 默认波形条数量（Icon 档 512×307 5:3：256 条 × 2px 步进 ≈ 1px 柱 + 1px 间距）
 pub const DEFAULT_WAVEFORM_BARS: usize = 256;
 
 const BAR_WIDTH: u32 = 1;
 const BAR_GAP: u32 = 1;
-const BG_COLOR: Rgba<u8> = Rgba([245, 245, 247, 255]);
+const BG_COLOR: Rgba<u8> = Rgba([0, 0, 0, 0]);
 const BAR_COLOR: Rgba<u8> = Rgba([124, 108, 255, 255]);
 
-/// 波形绘制样式（Icon 档默认浅底紫条）
+/// 波形绘制样式（Icon 档默认透明底紫条）
 #[derive(Clone, Copy, Debug)]
 pub struct WaveformStyle {
     pub background: Rgba<u8>,
@@ -311,7 +311,7 @@ fn decode_audio_peaks(path: &Path, bars: usize) -> Option<Vec<f32>> {
     Some(peaks)
 }
 
-/// 浅底 + 1px 细条对称波形（固定柱宽，条数由画布宽度与 peaks 共同决定）
+/// 透明底 + 1px 细条对称波形（固定柱宽，条数由画布宽度与 peaks 共同决定）
 pub fn draw_waveform(peaks: &[f32], width: u32, height: u32, style: WaveformStyle) -> RgbaImage {
     draw_waveform_bars(peaks, width, height, style)
 }
